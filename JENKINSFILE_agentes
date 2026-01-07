@@ -29,10 +29,10 @@ pipeline {
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             unstash name:'code'
-                            sh '''
-                                ls -la
-                                export PYTHONPATH=${WORKSPACE}
-                                /home/agent1/.local/bin/pytest --junitxml=result-unit.xml test/unit
+                            bat '''
+                                dir
+                                set PYTHONPATH=%WORKSPACE%
+								pytest --junitxml=result-unit.xml test\\unit
                             '''
                             stash name:'unit-res', includes:'result-unit.xml'
                        }
