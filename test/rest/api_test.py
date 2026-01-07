@@ -64,13 +64,16 @@ class TestApi(unittest.TestCase):
         url = f"{BASE_URL}/calc/divide/10/0"
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
     
-        self.assertEqual(
-            response.status, 406, f"Error en la petición API a {url}"
-        )
+        try:
+            urlopen(url, timeout=DEFAULT_TIMEOUT)
+            self.fail("La petición debía fallar con HTTP 406")
+        except HTTPError as e:
+            self.assertEqual(
+                e.code, 406, f"Error en la petición API a {url}"
+            )
     
-        self.assertEqual(
-            response.read().decode(), "ERROR DIVIDE/0", "ERROR DIVIDE BY ZERO"
-        )
-    
+            self.assertEqual(
+                e.read().decode(), "ERROR DIVIDE/0", "ERROR DIVIDE BY ZERO"
+            )
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
