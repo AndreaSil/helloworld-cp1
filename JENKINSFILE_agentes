@@ -46,8 +46,10 @@ pipeline {
                       catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                         unstash name:'code'
                         sh '''
+							source ~/venv/bin/activate
+
                             export FLASK_APP=app/api.py                          
-                            /home/jenkins/.local/bin/flask run &
+                            python -m flask run &
 
                             sleep 4
 
@@ -56,7 +58,7 @@ pipeline {
                             
                             sleep 15
                             
-                            /home/jenkins/.local/bin/pytest --junitxml=result-rest.xml test/rest
+                            python -m pytest --junitxml=result-rest.xml test/rest
                         '''
                       }
                       stash name:'rest-res', includes:'result-rest.xml'
