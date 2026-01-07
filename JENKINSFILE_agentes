@@ -7,7 +7,7 @@ pipeline {
         stage('Get Code') {
             steps {
                 // Obtener código del repo
-                git 'https://github.com/anieto-unir/helloworld.git'
+                git 'https://github.com/AndreaSil/helloworld-cp1.git'
 	            echo WORKSPACE
                 bat 'dir'
                 stash name:'code', includes:'**'
@@ -47,7 +47,7 @@ pipeline {
                         unstash name:'code'
                         sh '''
                             export FLASK_APP=app/api.py                          
-                            /home/agent2/.local/bin/flask run &
+                            /home/jenkins/.local/bin/flask run &
 
                             sleep 4
 
@@ -56,7 +56,7 @@ pipeline {
                             
                             sleep 15
                             
-                            /home/agent2/.local/bin/pytest --junitxml=result-rest.xml test/rest
+                            /home/jenkins/.local/bin/pytest --junitxml=result-rest.xml test/rest
                         '''
                       }
                       stash name:'rest-res', includes:'result-rest.xml'
