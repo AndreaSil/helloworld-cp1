@@ -7,17 +7,15 @@ pipeline {
         stage('Get Code') {
             steps {
                 // Obtener código del repo
-                git 'https://github.com/AndreaSil/helloworld-cp1.git'
-	            echo WORKSPACE
+                git branch: 'master', url: 'https://github.com/AndreaSil/helloworld-cp1.git'
+	            
+				bat 'whoami'
+				bat 'hostname'
+				bat 'echo %WORKSPACE%'
+			
                 bat 'dir'
                 stash name:'code', includes:'**'
             }
-        }
-    
-        stage('Build') {
-           steps {
-              echo 'Eyyy, esto es Python. No hay que compilar nada!!!'
-           }
         }
         
         stage('Tests')
