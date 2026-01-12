@@ -48,12 +48,12 @@ pipeline {
                     }
                 }        
             }
-        }
-        
-        stage ('Results') {
-            steps {
-                junit 'result*.xml'
-            }
-        }        
+        }   
+
+		post {
+		  always {
+			cleanWs()
+		  }
+		}		
      }
 }
