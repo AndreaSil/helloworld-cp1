@@ -6,7 +6,6 @@ pipeline {
      stages {
         stage('Get Code') {
             steps {
-                // Obtener código del repo
                 git branch: 'master', url: 'https://github.com/AndreaSil/helloworld-cp1.git'
 	            
 				bat 'whoami'
