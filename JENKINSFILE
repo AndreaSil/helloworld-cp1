@@ -51,9 +51,6 @@ pipeline {
 								timeout /t 10 /nobreak
                                 
                                 pytest --junitxml=result-rest.xml test\\rest
-								
-								taskkill /F /IM python.exe /T 2>nul
-								taskkill /F /IM java.exe /T 2>nul
                             '''
                         }
 						junit 'result-rest.xml'
