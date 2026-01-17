@@ -7,6 +7,7 @@ pipeline {
         stage('Get Code') {
             steps {
 				deleteDir()
+				
                 git branch: 'master', url: 'https://github.com/AndreaSil/helloworld-cp1.git'
 	            
 				bat 'whoami'
@@ -83,7 +84,6 @@ pipeline {
                 }
 				
 				stage('Generate Coverage') {
-				  agent { label 'agent1-windows' }
 				  steps {
 					deleteDir()
 					unstash 'code'
