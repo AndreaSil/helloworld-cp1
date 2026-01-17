@@ -153,7 +153,7 @@ pipeline {
 
 				sleep 15
 				JMETER=/opt/apache-jmeter-5.6.3/bin/jmeter
-				jmeter -n -t test/jmeter/flask.jmx -l flask.jtl -j jmeter.log
+				"$JMETER" -n -t test/jmeter/flask.jmx -l flask.jtl -j jmeter.log
 			  '''
 			}
 			stash name: 'perf-res', includes: 'flask.jtl,jmeter.log'
