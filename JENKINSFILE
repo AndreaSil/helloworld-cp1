@@ -135,15 +135,10 @@ pipeline {
 			  '''
 			}
 
-			publishCoverage(
-			  adapters: [coberturaAdapter('coverage.xml')],
-			  sourceFileResolver: sourceFiles('STORE_LAST_BUILD'),
-			  failNoReports: true,
-			  globalThresholds: [
-				[thresholdTarget: 'LINE',      unhealthyThreshold: 95, failingThreshold: 85],
-				[thresholdTarget: 'CONDITIONAL', unhealthyThreshold: 90, failingThreshold: 80]
-			  ]
-			)
+			cobertura coberturaReportFile: 'coverage.xml',
+					 onlyStable: false,
+					 lineCoverageTargets: '95,85,0',
+					 conditionalCoverageTargets: '90,80,0'
 		  }
 		}			
     }
