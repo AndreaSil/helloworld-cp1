@@ -1,6 +1,6 @@
 pipeline {
     agent any
-
+	skipDefaultCheckout(true)
     stages {
         stage('Get Code') {
             steps {
@@ -88,7 +88,7 @@ pipeline {
                         start java -jar "C:\\Users\\andre\\UNIR 2025\\wiremock\\wiremock-jre8-standalone-2.28.0.jar" --port 9090 --root-dir "C:\\Users\\andre\\UNIR 2025\\wiremock"
 						
 						REM Esperar a que los servicios arranquen
-						timeout /t 5 /nobreak
+						timeout /t 5 
 						
 						REM PYTHONPATH
                         set PYTHONPATH=%WORKSPACE%
@@ -115,7 +115,7 @@ pipeline {
 				REM Arrancar Flask en segundo plano
 				start flask run
 				
-				timeout /t 5 /nobreak
+				timeout /t 5
 
 				"C:\\Users\\andre\\UNIR 2025\\apache-jmeter-5.6.3\\bin\\jmeter.bat" -n -t test\\jmeter\\flask.jmx -l flask.jtl -j jmeter.log
 			  '''
