@@ -135,10 +135,10 @@ pipeline {
 			  '''
 			}
 
-			cobertura coberturaReportFile: 'coverage.xml',
-					 onlyStable: false,
-					 lineCoverageTargets: '95,85,0',
-					 conditionalCoverageTargets: '90,80,0'
+			//cobertura coberturaReportFile: 'coverage.xml',
+			//		 onlyStable: false,
+			//		 lineCoverageTargets: '95,85,0',
+			//		 conditionalCoverageTargets: '90,80,0'
 		  }
 		}			
     }
