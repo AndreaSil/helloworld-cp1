@@ -2,10 +2,9 @@ pipeline {
     agent any
 
     options { skipDefaultCheckout() }
-
+	//QUE SEA LO QUE DIOS QUIERA ALLA VA
      stages {
         stage('Get Code') {
-			agent { label 'principal' }
             steps {
 				deleteDir()
                 git branch: 'master', url: 'https://github.com/AndreaSil/helloworld-cp1.git'
@@ -27,6 +26,9 @@ pipeline {
                 stage('Unit') {
                     agent {label 'agent1'}
                     steps {
+						deleteDir()
+						unstash 'code'
+						
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             unstash name:'code'
                             bat '''
@@ -37,8 +39,69 @@ pipeline {
                             stash name:'unit-res', includes:'result-unit.xml'
                        }
                     }
-                }   
-                
+					post { always { cleanWs() } }
+                }
+
+			    stage('Static') {
+                    agent { label 'agent1' }
+                    steps {
+                        deleteDir()
+                       
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            bat '''
+                                whoami
+                                hostname
+                                echo %WORKSPACE%
+                                flake8 --exit-zero --format=pylint app 1>flake8.out
+                                type flake8.out
+                            '''
+                        }
+
+                        stash name: 'flake8-res', includes: 'flake8.out'
+                    }
+                    post { always { cleanWs() } }
+                }
+				
+				stage('Security') {
+                    agent { label 'agent1' }
+                    steps {
+                        deleteDir()
+
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            bat '''
+                                whoami
+                                hostname
+                                echo %WORKSPACE%
+                                python -m bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: {severity}: {test_id}: {msg}"
+                                type bandit.out
+                            '''
+                        }
+
+                        stash name: 'bandit-res', includes: 'bandit.out'
+                    }
+                    post { always { cleanWs() } }
+                }
+				
+				stage('Generate Coverage') {
+				  agent { label 'agent1-windows' }
+				  steps {
+					deleteDir()
+					unstash 'code'
+					catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+					  bat '''
+						whoami
+						hostname
+						echo %WORKSPACE%
+						set PYTHONPATH=%WORKSPACE%
+						coverage run --branch --source=app --omit=app\\__init__.py,app\\api.py -m pytest test\\unit
+						coverage xml -o coverage.xml
+						dir coverage.xml
+					  '''
+					}
+					stash name: 'cov-res', includes: 'coverage.xml'
+				  }
+				  post { always { cleanWs() } }
+				}
                 
                 stage('Rest') {
                     agent {label 'agent2'}
@@ -67,5 +130,96 @@ pipeline {
                 
             }
         }
+		//UBUNTU
+		stage('Rest') {
+			agent {label 'agent2'}
+			steps {
+			  catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+				unstash name:'code'
+				sh '''
+					whoami
+					hostname
+					echo "${WORKSPACE}"
+					. ~/venv/bin/activate
+
+					export FLASK_APP=app/api.py                          
+					python -m flask run &
+
+					sleep 4
+
+					java -jar /home/jenkins/wiremock/wiremock-standalone-3.3.1.jar --port 9090 --root-dir test/wiremock &
+					export PYTHONPATH=${WORKSPACE}
+					
+					sleep 15
+					
+					python -m pytest --junitxml=result-rest.xml test/rest
+				'''
+			  }
+			  stash name:'rest-res', includes:'result-rest.xml'
+			}  
+			post { always { cleanWs() } }			
+		}
+
+		stage('Performance') {
+		  agent { label 'agent2' }
+		  steps {
+			deleteDir()
+			unstash 'code'
+			catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+			  sh '''
+				whoami
+				hostname
+				echo "${WORKSPACE}"
+				. ~/venv/bin/activate
+
+				export FLASK_APP=app/api.py
+				python -m flask run &
+
+				sleep 15
+				/home/jenkins/apache-jmeter-5.6.3/bin/jmeter -n -t test/jmeter/flask.jmx -l flask.jtl -j jmeter.log
+			  '''
+			}
+			stash name: 'perf-res', includes: 'flask.jtl,jmeter.log'
+		  }
+		  post { always { cleanWs() } }
+		}
+		
+		stage('Publish Results') {
+		  steps {
+			deleteDir()
+			unstash 'code'
+
+			script {
+			  try { unstash 'unit-res' } catch (e) { echo 'No unit-res' }
+			  try { unstash 'rest-res' } catch (e) { echo 'No rest-res' }
+			  try { unstash 'flake8-res' } catch (e) { echo 'No flake8-res' }
+			  try { unstash 'bandit-res' } catch (e) { echo 'No bandit-res' }
+			  try { unstash 'perf-res' } catch (e) { echo 'No perf-res' }
+			  try { unstash 'cov-res' } catch (e) { echo 'No cov-res' }
+			}
+
+			bat 'whoami'
+			bat 'hostname'
+			bat 'echo %WORKSPACE%'
+			bat 'dir'
+
+			// JUnit
+			junit testResults: 'result-unit.xml,result-rest.xml', allowEmptyResults: true
+
+			// Warnings
+			recordIssues tools: [flake8(pattern: 'flake8.out')], qualityGates: [
+			  [threshold: 10, type: 'TOTAL', unstable: true],
+			  [threshold: 11, type: 'TOTAL', unstable: false]
+			]
+			recordIssues tools: [pyLint(pattern: 'bandit.out')]
+
+			// Performance
+			perfReport sourceDataFiles: 'flask.jtl'
+
+			// Coverage
+			recordCoverage tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
+		  }
+		  post { always { cleanWs() } }
+		}
     }
 }
