@@ -74,6 +74,14 @@ class TestCalculate(unittest.TestCase):
     def test_convert_to_number_negative_float(self):
         from app import util
         self.assertEqual(-0.5, util.convert_to_number("-0.5"))
+    def test_divide_by_zero_raises(self):
+        self.assertRaises(ZeroDivisionError, self.calc.divide, 10, 0)
+        
+    def test_divide_by_zero_raises(self):
+        with self.assertRaises(TypeError) as ctx:
+            self.calc.divide(10, 0)
+        self.assertEqual("Division by zero is not possible", str(ctx.exception))
+
         
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
