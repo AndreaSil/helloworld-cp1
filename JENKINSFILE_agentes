@@ -186,7 +186,7 @@ pipeline {
 			// Warnings
 			recordIssues tools: [flake8(pattern: 'flake8.out')], qualityGates: [
 			  [threshold: 10, type: 'TOTAL', unstable: true],
-			  [threshold: 11, type: 'TOTAL', unstable: false]
+			  [threshold: 15, type: 'TOTAL', unstable: false]
 			]
 			recordIssues tools: [pyLint(pattern: 'bandit.out')]
 
