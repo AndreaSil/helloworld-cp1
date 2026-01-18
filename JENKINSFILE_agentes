@@ -53,10 +53,18 @@ pipeline {
 					   
 					    // (líneas 95/85, ramas 90/80)
 						catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-						  cobertura coberturaReportFile: 'coverage.xml',
-							onlyStable: false,
-							lineCoverageTargets: '95,85,0',
-							conditionalCoverageTargets: '90,80,0'
+						   recordCoverage(
+							tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']],
+							qualityGates: [
+							  // LINEAS
+							  [criticality: 'NOTE',  metric: 'LINE',   threshold: 95.0],
+							  [criticality: 'ERROR', metric: 'LINE',   threshold: 85.0],
+
+							  // RAMAS
+							  [criticality: 'NOTE',  metric: 'BRANCH', threshold: 90.0],
+							  [criticality: 'ERROR', metric: 'BRANCH', threshold: 80.0]
+							]
+						  )
 						}
                     }
 					post { always { cleanWs() } }
