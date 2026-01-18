@@ -44,7 +44,6 @@ pipeline {
 								dir result-unit.xml
 								dir coverage.xml
                             '''
-                           // stash name:'unit-res', includes:'result-unit.xml'
                        }
 					   
 					    catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
@@ -92,8 +91,6 @@ pipeline {
 							[threshold: 10, type: 'TOTAL', unstable: false]   // >=10 => FAIL/ROJO
 						  ]
 						}
-
-                       // stash name: 'flake8-res', includes: 'flake8.out'
                     }
                     post { always { cleanWs() } }
                 }
@@ -109,7 +106,7 @@ pipeline {
                                 whoami
                                 hostname
                                 echo %WORKSPACE%
-                                python -m bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: {severity}: {test_id}: {msg}"
+                                python -m bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: {test_id}: {msg}"
                                 type bandit.out
                             '''
                         }
@@ -124,31 +121,9 @@ pipeline {
 							]
 						  )
 						}
-
-                        //stash name: 'bandit-res', includes: 'bandit.out'
                     }
                     post { always { cleanWs() } }
-                }
-				
-				//stage('Generate Coverage') {
-				//  steps {
-				//	deleteDir()
-				//	unstash 'code'
-				//	catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-				//	  bat '''
-				//		whoami
-				//		hostname
-				//		echo %WORKSPACE%
-				//		set PYTHONPATH=%WORKSPACE%
-				//		coverage run --branch --source=app --omit=app\\__init__.py,app\\api.py -m pytest test\\unit
-				//		coverage xml -o coverage.xml
-				//		dir coverage.xml
-				//	  '''
-				//	}
-				//	stash name: 'cov-res', includes: 'coverage.xml'
-				//  }
-				//  post { always { cleanWs() } }
-				//}              
+                }       
             }
         }
 		//UBUNTU
@@ -180,7 +155,6 @@ pipeline {
 			catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
 				junit testResults: 'result-rest.xml', allowEmptyResults: true
 			}
-			  //stash name:'rest-res', includes:'result-rest.xml'
 		  }  
 		  post { always { cleanWs() } }			
 		}
@@ -208,7 +182,6 @@ pipeline {
 			catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
               perfReport sourceDataFiles: 'flask.jtl'
             }
-			//stash name: 'perf-res', includes: 'flask.jtl,jmeter.log'
 		  }
 		  post { always { cleanWs() } }
 		}
