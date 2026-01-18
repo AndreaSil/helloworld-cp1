@@ -115,10 +115,14 @@ pipeline {
                         }
 						
 						catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-						  recordIssues tools: [pyLint(pattern: 'bandit.out')], qualityGates: [
-							[threshold: 2, type: 'TOTAL', unstable: true],   
-							[threshold: 4, type: 'TOTAL', unstable: false]   
-						  ]
+						  recordIssues(
+							enabledForFailure: true,
+							tools: [pyLint(pattern: 'bandit.out')],
+							qualityGates: [
+							  [threshold: 2, type: 'TOTAL', unstable: true],
+							  [threshold: 4, type: 'TOTAL', unstable: false]
+							]
+						  )
 						}
 
                         //stash name: 'bandit-res', includes: 'bandit.out'
