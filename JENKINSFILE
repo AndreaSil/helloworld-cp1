@@ -146,15 +146,14 @@ pipeline {
   }
   post {
         always {
-            bat '''
-            echo Parando servicios...
+             bat '''
+			  REM Parar WireMock (solo el que escucha en 9090)
+			  for /F "tokens=5" %%a in ('netstat -aon ^| findstr :9090 ^| findstr LISTENING') do taskkill /F /PID %%a
 
-            REM Parar Flask (python)
-            taskkill /F /IM python.exe /T || echo Flask ya parado
-
-            REM Parar WireMock (java)
-            taskkill /F /IM java.exe /T || echo WireMock ya parado
-            '''
+			  REM Parar Flask (solo el que escucha en 5000)
+			  for /F "tokens=5" %%a in ('netstat -aon ^| findstr :5000 ^| findstr LISTENING') do taskkill /F /PID %%a
+			'''
+			cleanWs disableDeferredWipeout: true, deleteDirs: true
         }
     }
 }
