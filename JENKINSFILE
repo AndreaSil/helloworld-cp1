@@ -109,6 +109,12 @@ pipeline {
 						
 						REM Ejecutar tests REST
 						pytest --junitxml=result-rest.xml test\\rest
+						
+						REM Parar WireMock (solo el proceso que escucha en 9090)
+						for /f "tokens=5" %%a in ('netstat -aon ^| findstr :9090 ^| findstr LISTENING') do taskkill /F /PID %%a
+
+						REM Parar Flask (solo el proceso que escucha en 5000)
+						for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5000 ^| findstr LISTENING') do taskkill /F /PID %%a
 					'''
 				}
 				catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
@@ -130,6 +136,10 @@ pipeline {
 				timeout /t 5
 
 				"C:\\Users\\andre\\UNIR 2025\\apache-jmeter-5.6.3\\bin\\jmeter.bat" -n -t test\\jmeter\\flask.jmx -l flask.jtl -j jmeter.log
+				
+				REM Parar Flask (solo el proceso que escucha en 5000)
+				for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5000 ^| findstr LISTENING') do taskkill /F /PID %%a
+
 			  '''
         }
         catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
