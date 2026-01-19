@@ -106,7 +106,7 @@ pipeline {
                                 whoami
                                 hostname
                                 echo %WORKSPACE%
-                                python -m bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: {test_id}: {msg}"
+                                python -m bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                                 type bandit.out
                             '''
                         }
