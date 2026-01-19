@@ -8,7 +8,7 @@ pipeline {
             steps {
 				deleteDir()
 				
-                git branch: 'feature_fix_coverage', url: 'https://github.com/AndreaSil/helloworld-cp1.git'
+                git branch: 'master', url: 'https://github.com/AndreaSil/helloworld-cp1.git'
 	            
 				bat 'whoami'
 				bat 'hostname'
