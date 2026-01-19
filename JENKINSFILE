@@ -137,14 +137,15 @@ pipeline {
 
 				"C:\\Users\\andre\\UNIR 2025\\apache-jmeter-5.6.3\\bin\\jmeter.bat" -n -t test\\jmeter\\flask.jmx -l flask.jtl -j jmeter.log
 				
+				netstat -aon | findstr :5000
 				for /F "tokens=5" %%a in ('netstat -aon ^| findstr :5000 ^| findstr LISTENING') do taskkill /F /PID %%a
 				powershell -NoProfile -Command "Get-CimInstance Win32_Process | ? { $_.CommandLine -like '*flask run*' } | % { Stop-Process -Id $_.ProcessId -Force }"
 			  '''
-        }
-        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+			}
+			catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
                 perfReport sourceDataFiles: 'flask.jtl'
-        }
-      }
+			}
+		}
     }
   }
   post { always { cleanWs() }}
