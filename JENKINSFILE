@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Get Code') {
             steps {
-                git 'https://github.com/AndreaSil/helloworld-cp1.git'
+                git 'https: //github.com/AndreaSil/helloworld-cp1.git'
 	            
 				bat 'whoami'
 				bat 'hostname'
@@ -12,63 +12,87 @@ pipeline {
 			
                 bat 'dir'
                 stash name:'code', includes:'**'
-            }
-        }
+			}
+		}
         
-        stage('Tests'){
-            parallel {
-                stage('Unit') {
-					steps {
-						catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-							bat '''
-							whoami
-							hostname
-							echo %WORKSPACE%
-
-							set PYTHONPATH=%WORKSPACE%
-							coverage run --branch --source=app --omit=app\\__init__.py,app\\api.py -m pytest --junitxml=result-unit.xml test\\unit
-							coverage xml -o coverage.xml
-							'''
+        stage('Tests')
+        {
+            parallel
+            {
+                stage('Unit+Coverage') {
+                    steps {
+						deleteDir()
+						unstash 'code'
+						
+                        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                            unstash name:'code'
+                            bat '''
+                                dir
+								
+								set PYTHONPATH=%WORKSPACE%
+								coverage run --branch --source=app --omit=app\\__init__.py,app\\api.py -m pytest --junitxml=result-unit.xml test\\unit
+								coverage xml -o coverage.xml
+								dir result-unit.xml
+								dir coverage.xml
+                            '''
 						}
-						junit 'result-unit.xml'
+					   
+					    catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+						  junit testResults: 'result-unit.xml', allowEmptyResults: true
+						}
+						catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+						   recordCoverage(
+							tools: [ [parser: 'COBERTURA', pattern: 'coverage.xml']],
+									qualityGates: [
+							[criticality: 'NOTE',  metric: 'LINE',   threshold: 95.0],
+							[criticality: 'ERROR', metric: 'LINE',   threshold: 85.0],
+							[criticality: 'NOTE',  metric: 'BRANCH', threshold: 90.0],
+							[criticality: 'ERROR', metric: 'BRANCH', threshold: 80.0]])
+						}
 					}
-                }
-				
-				stage('Static') {
-				  steps {
-					bat '''
-					  whoami
-					  hostname
-					  echo %WORKSPACE%
+					post { always { cleanWs() } }
+				}
 
-					  flake8 --exit-zero --format=pylint app >flake8.out
-					  type flake8.out
-					'''
-					recordIssues(
-					  tools: [flake8(pattern: 'flake8.out')],
-					  qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true],[threshold: 10, type: 'TOTAL', unstable: false]],
-					  sourceCodeRetention: 'LAST_BUILD'
-					)
-				  }
+			    stage('Static (flake8)') {
+                    steps {
+                        deleteDir()
+                        unstash 'code'
+						
+                        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                            bat '''
+                                flake8 --exit-zero --format=pylint app 1>flake8.out
+                                type flake8.out
+                            '''
+						}
+						
+						catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+						  recordIssues tools: [flake8(pattern: 'flake8.out')], qualityGates: [[threshold: 8,  type: 'TOTAL', unstable: true ],[threshold: 10, type: 'TOTAL', unstable: false]]
+						}
+					}
+                    post { always { cleanWs() } }
 				}
 				
-				stage('Security') {
-				  steps {
-					bat '''
-					  whoami
-					  hostname
-					  echo %WORKSPACE%
+				stage('Security (Bandit)') {
+                    steps {
+                        deleteDir()
+						unstash 'code'
 
-					  python -m bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: {severity}: {test_id}: {msg}"
-					  type bandit.out
-					'''
-					recordIssues(
-					  tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')],qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true],[threshold: 4, type: 'TOTAL', unstable: false]],
-					  sourceCodeRetention: 'LAST_BUILD'
-					)
-				  }
+                        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                            bat '''
+                                python -m bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: {test_id}: {msg}"
+                                type bandit.out
+                            '''
+						}
+						
+						catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+						  recordIssues(
+							enabledForFailure: true,
+							tools: [pyLint(pattern: 'bandit.out')],qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true],[threshold: 4, type: 'TOTAL', unstable: false]])
+						}
+					}
+                    post { always { cleanWs() } }
 				}
-            }
+			}
         }
 
 		stage('Service/Rest') {
@@ -96,20 +120,19 @@ pipeline {
 						REM Ejecutar tests REST
 						pytest --junitxml=result-rest.xml test\\rest
 					'''
-				}
-				junit 'result-rest.xml'
-			}
-		}  
+        }
+				catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+				    junit testResults: 'result-rest.xml', allowEmptyResults: true
+        }
+      }
+      post { always { cleanWs() } }
+    }  
 
 
 		stage('Performance') {
 		  steps {
 			catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
 			  bat '''
-				whoami
-				hostname
-				echo %WORKSPACE%
-
 				set FLASK_APP=app\\api.py
 				
 				REM Arrancar Flask en segundo plano
@@ -119,27 +142,12 @@ pipeline {
 
 				"C:\\Users\\andre\\UNIR 2025\\apache-jmeter-5.6.3\\bin\\jmeter.bat" -n -t test\\jmeter\\flask.jmx -l flask.jtl -j jmeter.log
 			  '''
-			}
-			perfReport sourceDataFiles: 'flask.jtl'
-		  }
-		}
-
-		stage('Coverage') {
-		  steps {
-			catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-			  bat '''
-				whoami
-				hostname
-				echo %WORKSPACE%
-				dir coverage.xml
-			  '''
-			}
-
-			//cobertura coberturaReportFile: 'coverage.xml',
-			//		 onlyStable: false,
-			//		 lineCoverageTargets: '95,85,0',
-			//		 conditionalCoverageTargets: '90,80,0'
-		  }
-		}			
+        }
+        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                perfReport sourceDataFiles: 'flask.jtl'
+        }
+      }
+      post { always { cleanWs() } }
     }
+  }
 }
