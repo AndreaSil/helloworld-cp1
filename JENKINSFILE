@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Get Code') {
             steps {
-                git 'https: //github.com/AndreaSil/helloworld-cp1.git'
+                git 'https://github.com/AndreaSil/helloworld-cp1.git'
 	            
 				bat 'whoami'
 				bat 'hostname'
